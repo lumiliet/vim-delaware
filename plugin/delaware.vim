@@ -3,6 +3,7 @@ let s:pluginPath = expand('<sfile>:p:h')
 
 if !exists('s:ranOnce')
     autocmd TextYankPost * :call s:OnDelete()
+    autocmd BufHidden * :call s:OnHiddenBuffer()
 
     let s:ranOnce = 1
 endif
@@ -56,9 +57,8 @@ fun! s:Delaware()
 endf
 
 fun! s:CreateDelaware (history)
-    if !exists('b:isDelaware')
+    if !exists('b:delawareBufferNumber')
         call s:SetupWindow()
-        let b:isDelaware = 1
     endif
 
     call s:Insert(a:history)
@@ -74,5 +74,12 @@ fun! s:SetupWindow()
     :enew
     :set buftype=nowrite
     exec "set filetype=" . filetype
-    :setlocal nohidden
+    let b:delawareBufferNumber = bufnr('%')
+
+endf
+
+fun! s:OnHiddenBuffer()
+    if exists('b:delawareBufferNumber')
+        exec b:delawareBufferNumber . "bd"
+    endif
 endf
