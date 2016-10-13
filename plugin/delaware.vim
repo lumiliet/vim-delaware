@@ -13,7 +13,7 @@ com! Delaware :call s:Delaware()
 
 fun! s:OnDelete()
     let historyFile = s:GetHistoryFile()
-    if v:event.operator == 'd' && len(historyFile) && len(v:event.regcontents)
+    if v:event.operator == 'd' && len(historyFile) && len(join(v:event.regcontents, ''))
         call writefile(v:event.regcontents, historyFile, "a")
     endif
 endf
