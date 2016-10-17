@@ -12,9 +12,36 @@ com! Delaware :call s:Delaware()
 
 
 fun! s:OnDelete()
+    if (v:event.operator == 'c' || v:event.operator == 'd') && len(join(v:event.regcontents, ''))
+        call s:InsertIntoHistory(v:event.regcontents)
+    endif
+endf
+
+fun! s:InsertIntoHistory(deleted)
+    let history = s:ReadHistory()
+
+    let length = len(a:deleted)
+
+    let lineRange = range(0,len(history) - length, length)
+
+    let newHistory = []
+    for index in lineRange
+        let lines = history[index:index + length - 1]
+        if lines != a:deleted
+            let newHistory = newHistory + lines
+        else
+            echo "same "
+        endif
+    endfor
+    let combined = newHistory + a:deleted
+
+    call s:WriteToHistory(combined)
+endf
+
+fun! s:WriteToHistory(list)
     let historyFile = s:GetHistoryFile()
-    if v:event.operator == 'd' && len(historyFile) && len(join(v:event.regcontents, ''))
-        call writefile(v:event.regcontents, historyFile, "a")
+    if len(historyFile)
+        call writefile(a:list, historyFile)
     endif
 endf
 
@@ -33,7 +60,7 @@ fun! s:ReadHistory()
     if filereadable(historyFile)
         return readfile(historyFile)
     else
-        return ""
+        return []
     endif
 endf
 
