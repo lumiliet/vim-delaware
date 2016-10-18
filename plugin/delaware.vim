@@ -4,12 +4,12 @@ let s:pluginPath = expand('<sfile>:p:h')
 if !exists('s:ranOnce')
     autocmd TextYankPost * :call s:OnDelete()
     autocmd BufHidden * :call s:OnHiddenBuffer()
+    autocmd BufEnter * :call s:RefreshInDelaware()
 
     let s:ranOnce = 1
 endif
 
 com! Delaware :call s:Delaware()
-
 
 fun! s:OnDelete()
     if (v:event.operator == 'c' || v:event.operator == 'd') && len(join(v:event.regcontents, ''))
@@ -20,17 +20,16 @@ endf
 fun! s:InsertIntoHistory(deleted)
     let history = s:ReadHistory()
 
-    let length = len(a:deleted)
+    let deletedlength = len(a:deleted)
+    let historyLength = len(history)
 
-    let lineRange = range(0,len(history) - length, length)
+    let lineRange = range(0,max([historyLength - deletedlength, 0]), deletedlength)
 
     let newHistory = []
     for index in lineRange
-        let lines = history[index:index + length - 1]
+        let lines = history[index:index + deletedlength - 1]
         if lines != a:deleted
             let newHistory = newHistory + lines
-        else
-            echo "same "
         endif
     endfor
     let combined = newHistory + a:deleted
@@ -55,12 +54,26 @@ fun! s:GetHistoryFile()
     endif
 endf
 
-fun! s:ReadHistory()
+fun! s:ReadHistory(...)
     let historyFile = s:GetHistoryFile()
+
+    if a:0 == 1
+        let historyFile = a:1
+    endif
+
     if filereadable(historyFile)
         return readfile(historyFile)
     else
         return []
+    endif
+endf
+
+
+fun! s:RefreshInDelaware()
+    if exists('b:delawareHistoryFile')
+        call s:Delete('%')
+        let history = s:ReadHistory(b:delawareHistoryFile)
+        call s:Insert(history)
     endif
 endf
 
@@ -84,7 +97,7 @@ fun! s:Delaware()
 endf
 
 fun! s:CreateDelaware (history)
-    if !exists('b:delawareBufferNumber')
+    if !exists('b:delawareHistoryFile')
         call s:SetupWindow()
     endif
 
@@ -93,6 +106,8 @@ endf
 
 
 fun! s:SetupWindow()
+
+    let historyFile = s:GetHistoryFile()
     let filetype = &filetype
     :split
     normal J
@@ -101,12 +116,23 @@ fun! s:SetupWindow()
     :enew
     :set buftype=nowrite
     exec "set filetype=" . filetype
-    let b:delawareBufferNumber = bufnr('%')
-
+    let bufferNumber = bufnr('%')
+    let b:delawareBufferNumber = bufferNumber
+    let b:delawareHistoryFile = historyFile
 endf
 
 fun! s:OnHiddenBuffer()
-    if exists('b:delawareBufferNumber')
+    if exists('b:delawareHistoryFile')
         exec b:delawareBufferNumber . "bd"
     endif
 endf
+
+fun! s:RefreshOutsideDelaware()
+    "Does not work. Cannot switch buffer from autocommand
+    if exists('b:delawareBufferNumber')
+        exec b:delawareBufferNumber . "b"
+        call s:RefreshInDelaware()
+        normal 
+    endif
+endf
+
