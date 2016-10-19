@@ -1,6 +1,6 @@
 #vim-delaware
 
-Keeps a history of all deleted text. Bring up the log by running `:Delaware`.
+Keeps a history of all deleted text for the current file. Bring up the log by running `:Delaware`.
 
 ##Options
 
