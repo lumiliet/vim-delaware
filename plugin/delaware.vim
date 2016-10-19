@@ -1,5 +1,10 @@
 
-let s:pluginPath = expand('<sfile>:p:h')
+
+fun! s:InitializeSettings()
+    if !exists('g:delaware_history_length')
+        let g:delaware_history_length = 1000
+    endif
+endf
 
 if !exists('s:ranOnce')
     autocmd TextYankPost * :call s:OnDelete()
@@ -7,9 +12,14 @@ if !exists('s:ranOnce')
     autocmd BufEnter * :call s:RefreshInDelaware()
 
     let s:ranOnce = 1
+    let s:pluginPath = expand('<sfile>:p:h')
+
+    call s:InitializeSettings()
+
+    com! Delaware :call s:Delaware()
 endif
 
-com! Delaware :call s:Delaware()
+
 
 fun! s:OnDelete()
     if (v:event.operator == 'c' || v:event.operator == 'd') && len(join(v:event.regcontents, ''))
@@ -23,7 +33,9 @@ fun! s:InsertIntoHistory(deleted)
     let deletedlength = len(a:deleted)
     let historyLength = len(history)
 
-    let lineRange = range(0,max([historyLength - deletedlength, 0]), deletedlength)
+    let historyStart = max([historyLength - g:delaware_history_length + deletedlength, 0])
+    let historyEnd = max([historyLength - deletedlength, historyStart])
+    let lineRange = range(historyStart, historyEnd, deletedlength)
 
     let newHistory = []
     for index in lineRange
@@ -32,7 +44,9 @@ fun! s:InsertIntoHistory(deleted)
             let newHistory = newHistory + lines
         endif
     endfor
-    let combined = newHistory + a:deleted
+    echo deletedlength - g:delaware_history_length
+    let deletedStart = max([deletedlength - g:delaware_history_length, 0])
+    let combined = newHistory + a:deleted[deletedStart:]
 
     call s:WriteToHistory(combined)
 endf
@@ -106,7 +120,6 @@ endf
 
 
 fun! s:SetupWindow()
-
     let historyFile = s:GetHistoryFile()
     let filetype = &filetype
     :split
