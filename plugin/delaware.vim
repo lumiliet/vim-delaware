@@ -57,7 +57,7 @@ fun! s:InsertIntoHistory(deleted)
         endif
     endfor
     let deletedStart = max([deletedlength - g:delaware_maximum_history_length, 0])
-    let combined = newHistory + a:deleted[deletedStart:]
+    let combined = newHistory + map(a:deleted[deletedStart:], "v:key . ':' . v:val")
 
     call s:WriteToHistory(combined)
 endf
@@ -163,7 +163,7 @@ endf
 
 fun! s:CleanHistoryFile()
     let historyFile = s:GetHistoryFile()
-    if historyFile
+    if len(historyFile)
         call delete(historyFile)
     elseif exists('b:delawareHistoryFile')
         call delete(b:delawareHistoryFile)
