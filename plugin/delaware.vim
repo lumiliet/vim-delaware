@@ -177,11 +177,11 @@ endf
 
 fun! s:Insert(history)
     let formatted = FormatHistory(a:history)
-    set modifiable
+    " set modifiable
     call s:Delete('%')
     call append('0', formatted)
     call s:Delete('$')
-    set nomodifiable
+    " set nomodifiable
 endf
 
 fun! FormatHistory(history)
