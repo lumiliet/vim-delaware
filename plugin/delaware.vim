@@ -189,14 +189,20 @@ fun! FormatHistory(history)
 
     let chunks = s:ChunkHistory(a:history)
 
+    let previousLength = 1
+
     for chunk in chunks
+        let length = len(chunk)
+
+        if length > 1 || previousLength != 1
+            call add(formatted, "")
+        endif
+
         for line in chunk
             call add(formatted, s:DecodeHistoryLine(line)["line"])
         endfor
 
-        if len(chunk) > 1
-            call add(formatted, "")
-        endif
+        let previousLength = length
     endfor
 
     return s:Trim(formatted)
