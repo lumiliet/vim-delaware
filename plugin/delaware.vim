@@ -1,5 +1,3 @@
-
-
 fun! s:InitializeSettings()
     if !exists('g:delaware_maximum_history_length')
         let g:delaware_maximum_history_length = 1000
@@ -26,7 +24,6 @@ if !exists('s:ranOnce')
 endif
 
 
-
 fun! s:OnDelete()
     if (v:event.operator == 'c' || v:event.operator == 'd')
         call s:InsertIntoHistory(v:event.regcontents)
@@ -48,18 +45,88 @@ fun! s:InsertIntoHistory(deleted)
     let historyEnd = max([historyLength - deletedlength, historyStart])
     let lineRange = range(historyStart, historyEnd, deletedlength)
 
-    let newHistory = []
+    let deletedLines = a:deleted[max([deletedlength - g:delaware_maximum_history_length, 0]):]
+    let deletedLines = map(s:Trim(deletedLines), "v:key . ':' . v:val")
 
-    for index in lineRange
-        let lines = history[index:index + deletedlength - 1]
-        if lines != a:deleted
-            let newHistory = newHistory + lines
+    call s:WriteToHistory(s:RewriteHistory(history, deletedLines))
+endf
+
+fun! s:Trim(lines)
+    let emptyLinesFront = 0
+    let emptyLinesBack = 0
+
+    for index in range(0, len(a:lines) -1)
+        if a:lines[index] == ''
+            let emptyLinesFront = emptyLinesFront + 1
+        else
+            break
         endif
     endfor
-    let deletedStart = max([deletedlength - g:delaware_maximum_history_length, 0])
-    let combined = newHistory + map(a:deleted[deletedStart:], "v:key . ':' . v:val")
 
-    call s:WriteToHistory(combined)
+    for index in range(len(a:lines) - 1, 0, -1)
+        if a:lines[index] == ''
+            let emptyLinesBack = emptyLinesBack + 1
+        else
+            break
+        endif
+    endfor
+
+    return a:lines[emptyLinesFront: len(a:lines) - emptyLinesBack - 1]
+endf
+
+fun! s:RewriteHistory(history, deletedLines)
+    let rewrittenHistory = []
+    let chunks = s:ChunkHistory(a:history)
+
+    for chunk in chunks
+        if chunk != a:deletedLines
+            for line in chunk
+                call add(rewrittenHistory, line)
+            endfor
+        endif
+    endfor
+
+    return rewrittenHistory + a:deletedLines
+endf
+
+fun! s:ChunkHistory(history)
+    let chunks = []
+    let history = a:history
+
+    while len(history)
+        let chunk = s:GetChunk(history)
+        let history = history[len(chunk):]
+        call add(chunks, chunk)
+    endw
+
+    return chunks
+endf
+
+fun! s:GetChunk(history)
+    let chunk = []
+
+    for line in a:history
+        let decoded = s:DecodeHistoryLine(line)
+
+        if len(chunk) && decoded["number"] == 0
+            return chunk
+        else
+            call add(chunk, line)
+        endif
+    endfor
+
+    return chunk
+endf
+
+fun! s:DecodeHistoryLine(line)
+    let match = matchlist(a:line, '^\([0-9]*\):')
+    if len(match)
+        let number = match[1]
+        let line = a:line[len(number) + 1:]
+        return {"number": number, "line": line}
+    else
+        return false
+    endif
 endf
 
 fun! s:WriteToHistory(list)
@@ -108,12 +175,31 @@ fun! s:Delete(range)
     exec "silent " . a:range . "delete _"
 endf
 
-fun! s:Insert(text)
-    " set modifiable
+fun! s:Insert(history)
+    let formatted = FormatHistory(a:history)
+    set modifiable
     call s:Delete('%')
-    call append('0', a:text)
+    call append('0', formatted)
     call s:Delete('$')
-    " set nomodifiable
+    set nomodifiable
+endf
+
+fun! FormatHistory(history)
+    let formatted = []
+
+    let chunks = s:ChunkHistory(a:history)
+
+    for chunk in chunks
+        for line in chunk
+            call add(formatted, s:DecodeHistoryLine(line)["line"])
+        endfor
+
+        if len(chunk) > 1
+            call add(formatted, "")
+        endif
+    endfor
+
+    return s:Trim(formatted)
 endf
 
 fun! s:Delaware()
@@ -188,6 +274,5 @@ fun! s:CleanAllHistoryFiles()
         echo "Nothing to delete"
     endif
 endf
-
 
 
