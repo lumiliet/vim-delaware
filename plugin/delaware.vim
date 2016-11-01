@@ -125,7 +125,7 @@ fun! s:DecodeHistoryLine(line)
         let line = a:line[len(number) + 1:]
         return {"number": number, "line": line}
     else
-        return false
+        return 0
     endif
 endf
 
