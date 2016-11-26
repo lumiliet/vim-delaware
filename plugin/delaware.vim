@@ -8,20 +8,23 @@ fun! s:InitializeSettings()
     endif
 endf
 
-if !exists('s:ranOnce')
-    autocmd TextYankPost * :call s:OnDelete()
-    autocmd BufHidden * :call s:OnHiddenBuffer()
-    autocmd BufEnter * :call s:RefreshInDelaware()
+try
+    if !exists('s:ranOnce')
+        autocmd TextYankPost * :call s:OnDelete()
+        autocmd BufHidden * :call s:OnHiddenBuffer()
+        autocmd BufEnter * :call s:RefreshInDelaware()
 
-    let s:ranOnce = 1
-    let s:pluginPath = expand('<sfile>:p:h')
+        let s:ranOnce = 1
+        let s:pluginPath = expand('<sfile>:p:h')
 
-    call s:InitializeSettings()
+        call s:InitializeSettings()
 
-    com! Delaware :call s:Delaware()
-    com! DelawareCleanOne :call s:CleanHistoryFile()
-    com! DelawareCleanAll :call s:CleanAllHistoryFiles()
-endif
+        com! Delaware :call s:Delaware()
+        com! DelawareCleanOne :call s:CleanHistoryFile()
+        com! DelawareCleanAll :call s:CleanAllHistoryFiles()
+    endif
+catch
+endtry
 
 
 fun! s:OnDelete()
