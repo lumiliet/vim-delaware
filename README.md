@@ -2,6 +2,8 @@
 
 Keeps a history of all deleted text for the current file.
 
+Only for `NeoVim`.
+
 ##Commands
 
 ### `:Delaware`
